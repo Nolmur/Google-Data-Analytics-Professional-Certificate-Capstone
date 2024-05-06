@@ -19,7 +19,7 @@ library(data.table)  # For efficient data manipulation
 library(tidyr)       # For tidying data
 
 # Setting the working directory
-setwd("/Users/nolmurseli/Downloads/Cyclist202404_202303")
+setwd("/Users/**********/Downloads/Cyclist202404_202303")
 
 # Combining datasets
 all_trips <- bind_rows(
