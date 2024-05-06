@@ -1,0 +1,96 @@
+# Install the required packages
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("lubridate")
+install.packages("dplyr")
+install.packages("readr")
+install.packages("janitor")
+install.packages("data.table")
+install.packages("tidyr")
+
+# Load necessary libraries
+library(tidyverse)   # For data manipulation and visualization
+library(ggplot2)     # For creating advanced plots
+library(lubridate)   # For date-time manipulation
+library(dplyr)       # For data manipulation
+library(readr)       # For reading CSV data
+library(janitor)     # For cleaning data frames
+library(data.table)  # For efficient data manipulation
+library(tidyr)       # For tidying data
+
+# Combining datasets
+all_trips <- bind_rows(
+  read_csv("file_202303.csv"),
+  read_csv("file_202304.csv"),
+  read_csv("file_202305.csv"),
+  # Add more files as needed
+)
+
+# Data Cleaning
+# Removing negative trip durations and test rides
+all_trips <- all_trips %>%
+  mutate(
+    started_at = as.POSIXct(started_at, format = "%Y-%m-%d %H:%M:%S"),
+    ended_at = as.POSIXct(ended_at, format = "%Y-%m-%d %H:%M:%S"),
+    trip_duration = as.numeric(difftime(ended_at, started_at, units = "mins"))
+  ) %>%
+  filter(trip_duration >= 0) %>%
+  filter(!str_detect(tolower(start_station_name), "test")) %>%
+  clean_names()  # janitor function to clean column names
+
+# Check count of distinct values in member_casual
+member_casual_counts <- table(all_trips$member_casual)
+# Display the counts
+print(member_casual_counts)
+
+# Aggregate total trip duration by member type
+total_trip_duration_by_member_type <- all_trips %>%
+  group_by(member_casual) %>%
+  summarize(total_trip_duration = sum(trip_duration, na.rm = TRUE)) %>%
+  rename(member_type = member_casual, total_trip_duration_mins = total_trip_duration)
+# Display the aggregated data
+print(total_trip_duration_by_member_type)
+
+# Statistical summary of trip_duration for all trips
+all_trips_summary <- summary(all_trips$trip_duration)
+print(all_trips_summary)
+
+# Statistical summary of trip_duration by customer type (member or casual)
+trip_duration_by_type_summary <- all_trips %>%
+  group_by(member_casual) %>%
+  summarise(
+    count = n(),
+    mean_duration = mean(trip_duration, na.rm = TRUE),
+    median_duration = median(trip_duration, na.rm = TRUE),
+    min_duration = min(trip_duration, na.rm = TRUE),
+    max_duration = max(trip_duration, na.rm = TRUE),
+    sd_duration = sd(trip_duration, na.rm = TRUE)
+  )
+# Display the summary by customer type
+print(trip_duration_by_type_summary)
+
+# Example analysis: Count number of trips by month and customer type
+summary_stats <- all_trips %>%
+  group_by(month, member_casual) %>%
+  summarise(number_of_rides = n(), .groups = 'drop')
+# Print the results
+print(summary_stats)
+
+# Visualizations
+# Distribution of Trip Durations
+ggplot(all_trips, aes(x = trip_duration)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black") +
+  labs(title = "Distribution of Trip Durations", x = "Duration (mins)", y = "Frequency") +
+  theme_minimal()
+
+ggsave("Trip_Duration_Distribution.png", width = 10, height = 6, dpi = 300)
+
+# Create the bar plot for average trip duration
+ggplot(trip_duration_by_type_summary, aes(x = member_casual, y = mean_duration, fill = member_casual)) +
+  geom_col() +
+  labs(title = "Average Trip Duration by Customer Type",
+       x = "Customer Type",
+       y = "Average Trip Duration (minutes)") +
+  theme_minimal()
+
+ggsave("Average_Trip_Duration.png", width = 10, height = 6, dpi = 300)
