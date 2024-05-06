@@ -1,1 +1,20 @@
+# Install the required packages
+install.packages("tidyverse")
+install.packages("ggplot2")
+install.packages("lubridate")
+install.packages("dplyr")
+install.packages("readr")
+install.packages("janitor")
+install.packages("data.table")
+install.packages("tidyr")
+
+# Load necessary libraries
+library(tidyverse)   # For data manipulation and visualization
+library(ggplot2)     # For creating advanced plots
+library(lubridate)   # For date-time manipulation
+library(dplyr)       # For data manipulation
+library(readr)       # For reading CSV data
+library(janitor)     # For cleaning data frames
+library(data.table)  # For efficient data manipulation
+library(tidyr)       # For tidying data
 
