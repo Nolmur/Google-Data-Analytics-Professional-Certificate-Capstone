@@ -18,3 +18,165 @@ library(janitor)     # For cleaning data frames
 library(data.table)  # For efficient data manipulation
 library(tidyr)       # For tidying data
 
+# Setting the working directory
+> setwd("/Users/*********/Downloads/Cyclist202404_202303/12months_Cvsfiles")
+
+# Load monthly data files from March 2023 to March 2024
+march2023 <- read_csv("march2023.csv")
+april2023 <- read_csv("april2023.csv")
+may2023 <- read_csv("may2023.csv")
+june2023 <- read_csv("june2023.csv")
+july2023 <- read_csv("july2023.csv")
+august2023 <- read_csv("august2023.csv")
+september2023 <- read_csv("september2023.csv")
+october2023 <- read_csv("october2023.csv")
+november2023 <- read_csv("november2023.csv")
+december2023 <- read_csv("december2023.csv")
+january2024 <- read_csv("january2024.csv")
+february2024 <- read_csv("february2024.csv")
+march2024 <- read_csv("march2024.csv")
+
+# Retrieve and display column names from each dataframe
+colnames(march2023)
+colnames(april2023)
+colnames(may2023)
+colnames(june2023)
+colnames(july2023)
+colnames(august2023)
+colnames(september2023)
+colnames(october2023)
+colnames(november2023)
+colnames(december2023)
+colnames(january2024)
+colnames(february2024)
+colnames(march2024)
+
+# Read and adjust types for each dataset
+march2023 <- read_csv("march2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+april2023 <- read_csv("april2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+may2023 <- read_csv("may2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+june2023 <- read_csv("june2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+july2023 <- read_csv("july2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+august2023 <- read_csv("august2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+september2023 <- read_csv("september2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+october2023 <- read_csv("october2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+november2023 <- read_csv("november2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+december2023 <- read_csv("december2023.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+january2024 <- read_csv("january2024.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+february2024 <- read_csv("february2024.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+march2024 <- read_csv("march2024.csv") %>% mutate(start_station_id = as.double(start_station_id), end_station_id = as.double(end_station_id))
+
+# Combine all the datasets into one single dataframe
+all_trips <- bind_rows(march2023, april2023, may2023, june2023, july2023, august2023, september2023, october2023, november2023, december2023, january2024, february2024, march2024)
+
+# check structure of the new dataframe
+str(all_trips)
+
+all_trips <- all_trips %>%
++     rename(ride_type = rideable_type, 
++            start_time = started_at,
++            end_time = ended_at,
++            customer_type = member_casual)
+> glimpse(all_trips)
+
+#column for day of the week the trip started
+all_trips$day_of_the_week <- format(as.Date(all_trips$start_time),'%a')
+
+#column for month when the trip started
+all_trips$month <- format(as.Date(all_trips$start_time),'%b_%y')
+#only the hours-minutes-seconds are.
+all_trips$time <- format(all_trips$start_time, format = "%H:%M")
+all_trips$time <- as.POSIXct(all_trips$time, format = "%H:%M")
+
+#column for trip duration in min
+all_trips$trip_duration <- (as.double(difftime(all_trips$end_time, all_trips$start_time)))/60
+
+# check the dataframe
+glimpse(all_trips)
+
+# checking for trip lengths less than 0
+nrow(subset(all_trips,trip_duration < 0))
+  
+#checking for testrides that were made by company for quality checks
+nrow(subset(all_trips, start_station_name %like% "TEST"))
+nrow(subset(all_trips, start_station_name %like% "test"))
+nrow(subset(all_trips, start_station_name %like% "Test"))
+
+# remove negative trip durations 
+all_trips_v2 <- all_trips[!(all_trips$trip_duration < 0),]
+
+#remove test rides
+all_trips_v2<- all_trips_v2[!((all_trips_v2$start_station_name %like% "TEST" | all_trips_v2$start_station_name %like% "test")),]
+
+#check dataframe
+glimpse(all_trips_v2)
+
+# checking count of distinct values
+table(all_trips_v2$customer_type)
+#aggregating total trip duration by customer type
+setNames(aggregate(trip_duration ~ customer_type, all_trips_v2, sum), c("customer_type", "total_trip_duration(mins)"))
+
+# Aggregating total trip duration by customer type
+total_trip_duration <- aggregate(trip_duration ~ customer_type, all_trips_v2, sum)
+
+# Rename the columns for clarity
+colnames(total_trip_duration) <- c("customer_type", "total_trip_duration(mins)")
+
+# statictical summary of trip_duration for all trips
+summary(all_trips_v2$trip_duration)
+
+library(dplyr)
+
+# Define the custom month labels
+custom_month_labels <- c("March2023", "April2023", "May2023", "June2023", "July2023", "August2023", "September2023", "October2023",
+                         "November2023", "December2023", "January2024", "February2024", "March2024")
+
+# Convert month to ordered factor with custom labels
+all_trips_v2$month <- factor(all_trips_v2$month, levels = unique(all_trips_v2$month), ordered = TRUE,
+                              labels = custom_month_labels)
+
+# Fix the order for the day_of_the_week variable
+all_trips_v2$day_of_the_week <- ordered(all_trips_v2$day_of_the_week, levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+
+# Group by customer_type and day_of_the_week, summarize, and arrange
+result <- all_trips_v2 %>%
+  group_by(customer_type, day_of_the_week) %>%
+  summarise(number_of_rides = n(), average_duration_mins = mean(trip_duration)) %>%
+  arrange(customer_type, desc(number_of_rides))
+
+# Print or further process 'result'
+print(result)
+
+all_trips_v2 %>%  
+  group_by(customer_type, day_of_the_week) %>% 
+  summarise(number_of_rides = n()) %>% 
+  arrange(customer_type, day_of_the_week)  %>% 
+  ggplot(aes(x = day_of_the_week, y = number_of_rides, fill = customer_type)) +
+  labs(title ="Total trips by customer type Vs. Day of the week") +
+  geom_col(width=0.5, position = position_dodge(width=0.5)) +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
+
+all_trips_v2 %>%  
+  group_by(customer_type, day_of_the_week) %>% 
+  summarise(average_trip_duration = mean(trip_duration)) %>%
+  ggplot(aes(x = day_of_the_week, y = average_trip_duration, fill = customer_type)) +
+  geom_col(width=0.5, position = position_dodge(width=0.5)) + 
+  labs(title ="Average trip duration by customer type Vs. Day of the week")
+
+all_trips_v2 %>%  
+  group_by(customer_type, time) %>% 
+  summarise(number_of_trips = n()) %>%
+  ggplot(aes(x = time, y = number_of_trips, color = customer_type, group = customer_type)) +
+  geom_line() +
+  scale_x_datetime(date_breaks = "1 hour", minor_breaks = NULL,
+                   date_labels = "%H:%M", expand = c(0,0)) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title ="Demand over 24 hours of a day", x = "Time of the day")
+
+all_trips_v2 %>%
+  group_by(ride_type, customer_type) %>%
+  summarise(number_of_trips = n()) %>%  
+  ggplot(aes(x= ride_type, y=number_of_trips, fill= customer_type))+
+              geom_bar(stat='identity') +
+  scale_y_continuous(labels = function(x) format(x, scientific = FALSE)) +
+  labs(title ="Ride type Vs. Number of trips")
