@@ -75,8 +75,7 @@ str(all_trips)
 all_trips <- all_trips %>%
 +     rename(ride_type = rideable_type, 
 +            start_time = started_at,
-+            end_time = ended_at,
-+            customer_type = member_casual)
++            end_time = ended_at)
 > glimpse(all_trips)
 
 #column for day of the week the trip started
@@ -113,6 +112,7 @@ glimpse(all_trips_v2)
 
 # checking count of distinct values
 table(all_trips_v2$customer_type)
+
 #aggregating total trip duration by customer type
 setNames(aggregate(trip_duration ~ customer_type, all_trips_v2, sum), c("customer_type", "total_trip_duration(mins)"))
 
